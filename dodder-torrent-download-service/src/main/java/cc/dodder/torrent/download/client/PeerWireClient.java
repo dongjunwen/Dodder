@@ -107,7 +107,7 @@ public class PeerWireClient {
 	}
 
 	private void sendHandShake(byte[] infoHash) throws Exception {
-
+		log.info("downloadMetadata sendHandShake ");
 		/*proctocol*/
 		out.write(Constants.BT_PROTOCOL.length() & 0xff);
 		out.write(Constants.BT_PROTOCOL.getBytes());
@@ -126,6 +126,7 @@ public class PeerWireClient {
 	}
 
 	private void handleMessage() throws Exception {
+		log.info("downloadMetadata handleMessage");
 		while (cachedBuff.readableBytes() >= nextSize) {
 			byte[] buff = new byte[nextSize];
 			cachedBuff.readBytes(buff);
@@ -492,8 +493,8 @@ public class PeerWireClient {
 	};
 
 	private NextFunction onProtocolLen = (byte[] buff) -> {
-		protocolLen = (int) buff[0];
 		log.info("downloadMetadata 协议长度设置为48 onProtocolLen");
+		protocolLen = (int) buff[0];
 		//接下来是协议名称(长度：protocolLen)和BT_RESERVED(长度：8)、info_hash(长度：20)、peer_id(长度：20)
 		setNext(protocolLen + 48, onHandshake);
 	};
