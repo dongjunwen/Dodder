@@ -56,8 +56,9 @@ public class DownloadConsumer implements ApplicationRunner {
                 }
                 countNum++;
                 if(countNum/1000==0){
-                    log.info("种子下载消费,达到1000条,休息十分钟");
-                    TimeUnit.MINUTES.sleep(10);
+                    log.info("种子下载消费,达到1000条,休息1分钟");
+                    TimeUnit.MINUTES.sleep(1);
+                    countNum=1;
                 }else {
                     TimeUnit.SECONDS.sleep(3);
                 }
