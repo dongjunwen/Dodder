@@ -10,6 +10,7 @@ import cc.dodder.dhtserver.netty.entity.UniqueBlockingQueue;
 import cc.dodder.torrent.download.service.DownloadService;
 import cc.dodder.torrent.download.util.RedisStreamUtil;
 import cc.dodder.torrent.download.util.SpringContextUtil;
+import com.alibaba.fastjson2.JSON;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
@@ -239,7 +240,8 @@ public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 		RedisStreamUtil streamUtil = new RedisStreamUtil(redisTemplate);
 		Map<Object, Object> map=new HashMap<>();
-		map.put(info_hash,new DownloadMsgInfo(sender.getHostString(), port, info_hash, crc64));
+		DownloadMsgInfo downloadMsgInfo=new DownloadMsgInfo(sender.getHostString(), port, info_hash, crc64);
+		map.put(info_hash, JSON.toJSONString(downloadMsgInfo));
 		//streamUtil.addGroup("downloadStream","downloadGroup", ReadOffset.latest());
 		RecordId recordId = streamUtil.addMessage("downloadStream", map);
 		log.info("放入redis 队列recordId:{}",recordId);

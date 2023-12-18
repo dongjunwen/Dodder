@@ -4,6 +4,7 @@ import cc.dodder.common.entity.DownloadMsgInfo;
 import cc.dodder.torrent.download.service.DownloadService;
 import cc.dodder.torrent.download.util.RedisStreamUtil;
 import cc.dodder.torrent.download.util.SpringContextUtil;
+import com.alibaba.fastjson2.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -46,7 +47,8 @@ public class DownloadConsumer implements ApplicationRunner {
                 }
                 Map<Object, Object> map = record.getValue();
                 for(Object keySet:map.keySet()){
-                    DownloadMsgInfo downloadMsgInfo= (DownloadMsgInfo) map.get(keySet);
+                    String  downloadMsgInfoStr= (String) map.get(keySet);
+                    DownloadMsgInfo downloadMsgInfo= JSON.parseObject(downloadMsgInfoStr,DownloadMsgInfo.class);
                     log.info("种子下载消费,最新消息:{}",downloadMsgInfo);
                     downloadService.downloadTorrent(downloadMsgInfo);
                     streamUtil.acknowledge("downloadStream","downloadGroup",record);

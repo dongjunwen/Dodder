@@ -14,6 +14,8 @@ import java.io.Serializable;
 @Data
 public class DownloadMsgInfo implements Serializable {
 
+
+
 	private String ip;
 	private int port;
 	private byte[] infoHash;
