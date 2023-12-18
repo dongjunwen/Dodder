@@ -32,8 +32,8 @@ public class Torrent implements Serializable {
     private long createDate;
 
     private String files;
-
-    private Integer isXxx = 0;    //is sensitive torrent?
+    //is sensitive torrent?
+    private Integer isXxx = 0;
 
     public Torrent() {
     }

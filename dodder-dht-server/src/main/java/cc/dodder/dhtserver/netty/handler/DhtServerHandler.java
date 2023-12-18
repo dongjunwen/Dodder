@@ -8,6 +8,8 @@ import cc.dodder.common.util.bencode.BencodingUtils;
 import cc.dodder.dhtserver.netty.entity.Node;
 import cc.dodder.dhtserver.netty.entity.UniqueBlockingQueue;
 import cc.dodder.torrent.download.service.DownloadService;
+import cc.dodder.torrent.download.util.RedisStreamUtil;
+import cc.dodder.torrent.download.util.SpringContextUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
@@ -16,11 +18,15 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.stream.ReadOffset;
+import org.springframework.data.redis.connection.stream.RecordId;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -36,8 +42,6 @@ import java.util.*;
 @Component
 @ChannelHandler.Sharable
 public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
-	@Autowired
-	private StringRedisTemplate redisTemplate;
 
 	@Autowired
 	private DownloadService downloadService;
@@ -220,6 +224,7 @@ public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 		crc.reset();
 		crc.update(info_hash);
 		String crc64 = Long.toHexString(crc.getValue());
+		StringRedisTemplate redisTemplate=(StringRedisTemplate)SpringContextUtil.getBean(StringRedisTemplate.class);
 		//check exists
 		if (redisTemplate.hasKey(crc64)) {
 			return;
@@ -228,8 +233,16 @@ public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 		//log.error("info_hash[AnnouncePeer] : {}:{} - {}", sender.getHostString(), port, ByteUtil.byteArrayToHex(info_hash));
 		//send to kafka
 		//streamBridge.send("download-out", JSONUtil.toJSONString(new DownloadMsgInfo(sender.getHostString(), port, info_hash, crc64)).getBytes());
+		//直接放入线程池下载 效率较低
+		//downloadService.downloadTorrent(new DownloadMsgInfo(sender.getHostString(), port, info_hash, crc64));
+		//放入redis 队列 慢慢消化
 
-		downloadService.downloadTorrent(new DownloadMsgInfo(sender.getHostString(), port, info_hash, crc64));
+		RedisStreamUtil streamUtil = new RedisStreamUtil(redisTemplate);
+		Map<Object, Object> map=new HashMap<>();
+		map.put(info_hash,new DownloadMsgInfo(sender.getHostString(), port, info_hash, crc64));
+		//streamUtil.addGroup("downloadStream","downloadGroup", ReadOffset.latest());
+		RecordId recordId = streamUtil.addMessage("downloadStream", map);
+		log.info("放入redis 队列recordId:{}",recordId);
 	}
 
 	/**

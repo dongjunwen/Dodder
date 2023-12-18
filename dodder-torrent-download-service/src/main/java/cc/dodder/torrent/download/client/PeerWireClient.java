@@ -11,6 +11,7 @@ import ch.qos.logback.core.encoder.ByteArrayUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.io.InputStream;
@@ -166,11 +167,13 @@ public class PeerWireClient {
 			{
 				int dsite = 0;
 				while(str1[index1+dsite]==str2[index2+dsite]) {
-					if(index2+dsite+1>=str2.length)
-						return index1;
+					if(index2+dsite+1>=str2.length) {
+                        return index1;
+                    }
 					dsite++;
-					if(index1+dsite>=str1.length || index2+dsite>=str2.length)
-						break;
+					if(index1+dsite>=str1.length || index2+dsite>=str2.length) {
+                        break;
+                    }
 				}
 				index1++;
 			}
@@ -502,8 +505,9 @@ public class PeerWireClient {
 
 		//length prefix bytes
 		byte[] length_prefix = ByteUtil.intToByteArray(data.length + 2);
-		for(int i=0; i<4; i++)
-			length_prefix[i] = (byte)(length_prefix[i] & 0xff);
+		for(int i=0; i<4; i++) {
+            length_prefix[i] = (byte)(length_prefix[i] & 0xff);
+        }
 		out.write(length_prefix);
 
 		//bittorrent message ID, = 20
@@ -532,13 +536,15 @@ public class PeerWireClient {
 		infoHash = null;
 		torrent = null;
 		try {
-			if (in != null)
-				in.close();
+			if (in != null) {
+                in.close();
+            }
 		} catch (Exception e) {
 		}
 		try {
-			if (out != null)
-				out.close();
+			if (out != null) {
+                out.close();
+            }
 		} catch (Exception e) {
 		}
 		try {
@@ -554,8 +560,9 @@ public class PeerWireClient {
 			} catch (Exception e) {
 			}
 		}
-		if (map != null)
-			map.clear();
+		if (map != null) {
+            map.clear();
+        }
 	}
 
 
