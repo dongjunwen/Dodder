@@ -42,7 +42,7 @@ public class DownloadConsumer implements ApplicationRunner {
                 MapRecord<String, Object, Object> record = streamUtil.readOne("downloadStream", "downloadGroup", "DownloadConsumer", Duration.ofSeconds(2), ReadOffset.lastConsumed());
                 if (record == null) {
                     log.info("种子下载消费,没有最新消息");
-                    TimeUnit.SECONDS.sleep(3);
+                    TimeUnit.SECONDS.sleep(1);
                     continue;
                 }
                 Map<Object, Object> map = record.getValue();
@@ -56,11 +56,11 @@ public class DownloadConsumer implements ApplicationRunner {
                 }
                 countNum++;
                 if(countNum%1000==0){
-                    log.info("种子下载消费,达到1000条,休息15分钟");
-                    TimeUnit.MINUTES.sleep(15);
+                    log.info("种子下载消费,达到1000条,休息3分钟");
+                    TimeUnit.MINUTES.sleep(3);
                     countNum=1;
                 }else {
-                    TimeUnit.SECONDS.sleep(3);
+                  //  TimeUnit.SECONDS.sleep(3);
                 }
             }catch (Exception e){
              log.info("种子下载消费发生异常:{0}",e);

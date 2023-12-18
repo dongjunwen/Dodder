@@ -75,17 +75,17 @@ public class PeerWireClient {
 		this.peerId = Constants.PEER_ID;
 		this.infoHash = infoHash;
 		this.crc64 = crc64;
-		log.info("downloadMetadata crc64={} ",crc64);
+		log.info("downloadMetadata crc64={},address{}",crc64,address);
 		try {
 			socket = new Socket();
 			socket.setSoTimeout(Constants.READ_WRITE_TIMEOUT);
 			socket.setReuseAddress(true);
 			socket.setTcpNoDelay(true);
 			socket.connect(address, Constants.CONNECT_TIMEOUT);
-
+			log.info("downloadMetadata connect ",crc64);
 			in = socket.getInputStream();
 			out = socket.getOutputStream();
-
+			log.info("downloadMetadata connect ",crc64);
 			setNext(1, onProtocolLen);
 			sendHandShake(infoHash);
 
@@ -96,12 +96,14 @@ public class PeerWireClient {
 			}
 		} catch (Exception e) {
 			//e.printStackTrace();
+			log.info("downloadMetadata Exception{}",e);
 		} finally {
 			/*try {
 				if (onFinishedListener != null && torrent != null) {
 					onFinishedListener.accept(torrent);
 				}
 			} catch (Exception ignored) {}*/
+			log.info("downloadMetadata finally ");
 			destroy();
 		}
 	}
