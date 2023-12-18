@@ -75,7 +75,7 @@ public class PeerWireClient {
 		this.peerId = Constants.PEER_ID;
 		this.infoHash = infoHash;
 		this.crc64 = crc64;
-		log.info("crc64={} downloadMetadata",crc64);
+		log.info("downloadMetadata crc64={} ",crc64);
 		try {
 			socket = new Socket();
 			socket.setSoTimeout(Constants.READ_WRITE_TIMEOUT);
@@ -138,7 +138,7 @@ public class PeerWireClient {
 		@Override
 		public void doNext(byte[] buff) throws Exception {
 			setNext(4, onMessageLength);
-			log.info("buff[0]={}",buff[0]);
+			log.info("downloadMetadata onMessage");
 			if (buff[0] == Constants.BT_MSG_ID) {
 				resolveExtendMessage(buff[1], Arrays.copyOfRange(buff, 2, buff.length));
 			}
@@ -146,11 +146,11 @@ public class PeerWireClient {
 	};
 
 	private void resolveExtendMessage(byte b, byte[] buf) throws Exception {
-		log.info("resolveExtendMessage");
+		log.info("downloadMetadata resolveExtendMessage");
 		if (b == 0) {
             resolveExtendHandShake(BencodingUtils.decode(buf));
         } else {
-			log.info("resolvePiece start");
+			log.info("downloadMetadata resolvePiece start");
             resolvePiece(buf);
         }
 	}
@@ -219,7 +219,7 @@ public class PeerWireClient {
 		}
 		pieces--;
 		piece++;
-		log.info("checkFinished");
+		log.info("downloadMetadata checkFinished");
 		checkFinished();
 		if (pieces > 0) {
             requestPiece(piece);
@@ -227,7 +227,7 @@ public class PeerWireClient {
 	}
 
 	private void checkFinished() throws Exception {
-		log.info("checkFinished pieces={}", pieces);
+		log.info("downloadMetadata checkFinished pieces={}", pieces);
 		if (pieces <= 0) {
 			Map map = BencodingUtils.decode(metadata);
 
@@ -247,7 +247,7 @@ public class PeerWireClient {
 
 						//写入本地文件
 						String fileName=IdUtils.genFileNo()+".torrent";
-						log.info("种子信息{}开始写入文件{}",torrent,fileName);
+						log.info("downloadMetadata 种子信息{}开始写入文件{}",torrent,fileName);
 						FileUtils.saveFile(JSONUtil.toJSONString(torrent),"/data/s8/torrent/"+fileName);
 						redisTemplate.opsForValue().set(crc64, "");
 					}
@@ -476,7 +476,7 @@ public class PeerWireClient {
 
 	private NextFunction onMessageLength = (byte[] buff) -> {
 		int length = ByteUtil.byteArrayToInt(buff);
-		log.info("message len={}",length);
+		log.info("downloadMetadata message len={}",length);
 		if (length > 0) {
             setNext(length, onMessage);
         }
@@ -484,7 +484,7 @@ public class PeerWireClient {
 
 	private NextFunction onHandshake = (byte[] buff) -> {
 		byte[] handshake = Arrays.copyOfRange(buff, protocolLen, buff.length);
-		log.info("handshake[5]={}",handshake[5]);
+		log.info("downloadMetadata onHandshake");
 		if (handshake[5] == 0x10) {
 			setNext(4, onMessageLength);
 			sendExtHandShake();
@@ -493,7 +493,7 @@ public class PeerWireClient {
 
 	private NextFunction onProtocolLen = (byte[] buff) -> {
 		protocolLen = (int) buff[0];
-		log.info("协议长度设置为48");
+		log.info("downloadMetadata 协议长度设置为48 onProtocolLen");
 		//接下来是协议名称(长度：protocolLen)和BT_RESERVED(长度：8)、info_hash(长度：20)、peer_id(长度：20)
 		setNext(protocolLen + 48, onHandshake);
 	};
