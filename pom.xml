@@ -20,9 +20,9 @@
         <module>dodder-common</module>
         <module>dodder-dht-server</module>
         <module>dodder-torrent-download-service</module>
-        <module>dodder-torrent-store-service</module>
-        <module>dodder-web</module>
-        <module>dodder-api</module>
+        <!--  <module>dodder-torrent-store-service</module>
+      <module>dodder-web</module>
+        <module>dodder-api</module>-->
         <module>words</module>
     </modules>
 
@@ -57,6 +57,11 @@
                 <version>0.2.0.RELEASE</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>cc.dodder</groupId>
+                <artifactId>dodder-torrent-download-service</artifactId>
+                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

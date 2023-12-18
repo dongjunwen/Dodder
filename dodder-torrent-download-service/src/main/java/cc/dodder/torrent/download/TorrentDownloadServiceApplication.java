@@ -1,19 +1,13 @@
 package cc.dodder.torrent.download;
 
 import cc.dodder.common.entity.DownloadMsgInfo;
-import cc.dodder.common.util.SensitiveWordsUtil;
 import cc.dodder.common.util.SystemClock;
 import cc.dodder.torrent.download.client.Constants;
 import cc.dodder.torrent.download.task.BlockingExecutor;
 import cc.dodder.torrent.download.task.DownloadTask;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -21,9 +15,9 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-@Slf4j
+/*@Slf4j
 @EnableScheduling
-@SpringBootApplication
+@SpringBootApplication*/
 public class TorrentDownloadServiceApplication {
 
 	@Value("${download.num.thread}")
@@ -39,12 +33,12 @@ public class TorrentDownloadServiceApplication {
 		TorrentDownloadServiceApplication.filterSensitiveWords = filterSensitiveWords;
 	}
 
-	public static void main(String[] args) {
+/*	public static void main(String[] args) {
 		SensitiveWordsUtil.getInstance();	//init it
 		SpringApplication.run(TorrentDownloadServiceApplication.class, args);
-	}
+	}*/
 
-	@Bean
+	//@Bean
 	public Consumer<List<DownloadMsgInfo>> download() {
 		return list -> {
 			//submit to blocking executor
@@ -71,13 +65,13 @@ public class TorrentDownloadServiceApplication {
 		System.runFinalization();
 	}*/
 
-	@PostConstruct
+	//@PostConstruct
 	public void init() {
 		//max task bound 5000
 		blockingExecutor = new BlockingExecutor(Executors.newFixedThreadPool(nThreads), 5000);
 	}
 
-	@PreDestroy
+	//@PreDestroy
 	public void destroy() {
 		blockingExecutor.shutdownNow();
 	}

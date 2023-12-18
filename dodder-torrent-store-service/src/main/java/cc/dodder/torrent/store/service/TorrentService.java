@@ -48,6 +48,7 @@ public class TorrentService {
 	@Transactional
 	public void upsertAndIndex(List<Torrent> torrents) {
 		torrentDao.upsert(torrents);
-		torrentDao.index(torrents);
+		//暂时先去掉 Elasticsearch
+		//torrentDao.index(torrents);
 	}
 }

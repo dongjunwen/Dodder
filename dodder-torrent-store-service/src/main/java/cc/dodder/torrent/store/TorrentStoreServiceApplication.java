@@ -15,8 +15,8 @@ import org.springframework.messaging.Message;
 import java.util.List;
 import java.util.function.Consumer;
 
-@Slf4j
-@SpringBootApplication
+/*@Slf4j
+@SpringBootApplication*/
 public class TorrentStoreServiceApplication {
 
 	@Autowired
@@ -26,12 +26,14 @@ public class TorrentStoreServiceApplication {
 	public void setFilterXxx(Boolean filterXxx) {
 		TorrentStoreServiceApplication.filterXxx = filterXxx;
 	}
+/*
 	public static void main(String[] args) {
 		SpringApplication.run(TorrentStoreServiceApplication.class, args);
 	}
+*/
 
 
-	@Bean
+	//@Bean
 	public Consumer<Message<List<Torrent>>> store() {
 		return message -> {
 			Acknowledgment acknowledgment = message.getHeaders().get(KafkaHeaders.ACKNOWLEDGMENT, Acknowledgment.class);

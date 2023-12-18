@@ -13,7 +13,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHitSupport;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -47,8 +46,8 @@ import static org.elasticsearch.search.sort.SortOrder.DESC;
 @Repository
 public class TorrentDaoImpl implements TorrentDao {
 
-    @Autowired
-    private ElasticsearchRestTemplate elasticsearchRestTemplate;
+   // @Autowired
+   // private ElasticsearchRestTemplate elasticsearchRestTemplate;
     @Autowired
     private MongoTemplate mongoTemplate;
 
@@ -73,7 +72,7 @@ public class TorrentDaoImpl implements TorrentDao {
             UpdateQuery updateQuery = UpdateQuery.builder(torrent.getInfoHash()).withDocument(document).withDocAsUpsert(true).build();
             list.add(updateQuery);
         }
-        elasticsearchRestTemplate.bulkUpdate(list, Torrent.class);
+       // elasticsearchRestTemplate.bulkUpdate(list, Torrent.class);
     }
 
     @Override
@@ -145,8 +144,8 @@ public class TorrentDaoImpl implements TorrentDao {
                 query.withHighlightFields(new HighlightBuilder.Field("fileName"));
             }
         }
-
-        SearchHits<Torrent> searchHits = elasticsearchRestTemplate.search(query.build(), Torrent.class);
+        SearchHits<Torrent> searchHits =null;
+       // SearchHits<Torrent> searchHits = elasticsearchRestTemplate.search(query.build(), Torrent.class);
         if (request.getFileName() != null) {
             for (SearchHit<Torrent> hit : searchHits) {
                 if (hit == null) continue;
@@ -187,7 +186,8 @@ public class TorrentDaoImpl implements TorrentDao {
                 .withPageable(pageable)
                 .withQuery(boolQuery.must(moreLikeThisQueryBuilder)).build();
 
-        SearchHits<Torrent> searchHits = elasticsearchRestTemplate.search(query, Torrent.class);
+        SearchHits<Torrent> searchHits =null;
+                //  SearchHits<Torrent> searchHits = elasticsearchRestTemplate.search(query, Torrent.class);
         searchHits.stream().filter(hit -> hit.getContent().getFileNameRu() != null).forEach(hit -> hit.getContent().setFileName(hit.getContent().getFileNameRu()));
         AggregatedPage<SearchHit<Torrent>> page = SearchHitSupport.page(searchHits, pageable);
 

@@ -5,12 +5,14 @@ import cc.dodder.common.entity.Torrent;
 import cc.dodder.common.entity.Tree;
 import cc.dodder.common.util.*;
 import cc.dodder.common.util.bencode.BencodingUtils;
+import cc.dodder.common.util.snowflake.IdUtils;
 import cc.dodder.torrent.download.TorrentDownloadServiceApplication;
 import cc.dodder.torrent.download.util.SpringContextUtil;
 import ch.qos.logback.core.encoder.ByteArrayUtil;
+import ch.qos.logback.core.rolling.helper.FileStoreUtil;
+import ch.qos.logback.core.util.FileUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.io.InputStream;
@@ -226,8 +228,12 @@ public class PeerWireClient {
 					StringRedisTemplate redisTemplate = (StringRedisTemplate) SpringContextUtil.getBean(StringRedisTemplate.class);
 					if (!redisTemplate.hasKey(crc64)) {
 						//丢进 kafka 消息队列进行入库及索引操作
-						StreamBridge streamBridge = (StreamBridge) SpringContextUtil.getBean(StreamBridge.class);
-						streamBridge.send("download-out-0", JSONUtil.toJSONString(torrent).getBytes());
+						//StreamBridge streamBridge = (StreamBridge) SpringContextUtil.getBean(StreamBridge.class);
+						//streamBridge.send("download-out-0", JSONUtil.toJSONString(torrent).getBytes());
+
+						//写入本地文件
+						String fileName=IdUtils.genFileNo()+".torrent";
+						FileUtils.saveFile(JSONUtil.toJSONString(torrent),"/data/s8/torrent/"+fileName);
 						redisTemplate.opsForValue().set(crc64, "");
 					}
 					torrent = null;
