@@ -75,6 +75,7 @@ public class PeerWireClient {
 		this.peerId = Constants.PEER_ID;
 		this.infoHash = infoHash;
 		this.crc64 = crc64;
+		log.info("crc64={} downloadMetadata",crc64);
 		try {
 			socket = new Socket();
 			socket.setSoTimeout(Constants.READ_WRITE_TIMEOUT);
@@ -145,11 +146,11 @@ public class PeerWireClient {
 	};
 
 	private void resolveExtendMessage(byte b, byte[] buf) throws Exception {
-		log.info("resolveExtendMessage  b={}", b);
+		log.info("resolveExtendMessage");
 		if (b == 0) {
             resolveExtendHandShake(BencodingUtils.decode(buf));
         } else {
-			log.info("resolvePiece start b={}", buf);
+			log.info("resolvePiece start");
             resolvePiece(buf);
         }
 	}
@@ -218,7 +219,7 @@ public class PeerWireClient {
 		}
 		pieces--;
 		piece++;
-		log.info("checkFinished={}", buff);
+		log.info("checkFinished");
 		checkFinished();
 		if (pieces > 0) {
             requestPiece(piece);
