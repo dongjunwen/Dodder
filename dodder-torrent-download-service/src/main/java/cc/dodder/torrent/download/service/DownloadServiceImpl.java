@@ -11,7 +11,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 /**
  * @author jerry
@@ -30,8 +30,9 @@ public class DownloadServiceImpl implements DownloadService{
     private BlockingExecutor blockingExecutor;
     @PostConstruct
     public void init() {
+       final ExecutorService threadPoolExecutor = new ThreadPoolExecutor(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), Executors.defaultThreadFactory());
         //max task bound 5000
-        blockingExecutor = new BlockingExecutor(Executors.newFixedThreadPool(nThreads), 5000);
+        blockingExecutor = new BlockingExecutor(threadPoolExecutor, 5000);
     }
 
     /**

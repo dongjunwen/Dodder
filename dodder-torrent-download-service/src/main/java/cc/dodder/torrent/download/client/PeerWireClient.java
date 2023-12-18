@@ -136,6 +136,7 @@ public class PeerWireClient {
 		@Override
 		public void doNext(byte[] buff) throws Exception {
 			setNext(4, onMessageLength);
+			log.info("buff[0]={}",buff[0]);
 			if (buff[0] == Constants.BT_MSG_ID) {
 				resolveExtendMessage(buff[1], Arrays.copyOfRange(buff, 2, buff.length));
 			}
@@ -143,9 +144,11 @@ public class PeerWireClient {
 	};
 
 	private void resolveExtendMessage(byte b, byte[] buf) throws Exception {
+		log.info("resolveExtendMessage  b={}", b);
 		if (b == 0) {
             resolveExtendHandShake(BencodingUtils.decode(buf));
         } else {
+			log.info("resolvePiece start b={}", buf);
             resolvePiece(buf);
         }
 	}
@@ -173,8 +176,9 @@ public class PeerWireClient {
 			}
 			return -1;
 		}
-		else
-			return index1;
+		else {
+            return index1;
+        }
 	}
 
 	private void resolvePiece(byte[] buff) throws Exception {
@@ -188,7 +192,8 @@ public class PeerWireClient {
             return;
         }
 		byte[] piece_metadata = Arrays.copyOfRange(buff, pos, buff.length);
-		if (piece == 0 && piece_metadata[0] != 'd') {	// drop confused packet
+		// drop confused packet
+		if (piece == 0 && piece_metadata[0] != 'd') {
 			destroy();
 			return;
 		}
@@ -196,9 +201,9 @@ public class PeerWireClient {
 			destroy();
 			return;
 		}
-
 		int piecesPos = strstr(piece_metadata, "6:pieces".getBytes(), 0, piece_metadata.length);
-		if (piecesPos > 0) {    //useless data
+		//useless data
+		if (piecesPos > 0) {
 			System.arraycopy(piece_metadata, 0, this.metadata, piece * 16 * 1024, piecesPos);
 			metadata[piece * 16 * 1024 + piecesPos] = 'e';
 			metadata[piece * 16 * 1024 + piecesPos + 1] = 'e';
@@ -208,9 +213,9 @@ public class PeerWireClient {
 		} else {
 			System.arraycopy(piece_metadata, 0, this.metadata, piece * 16 * 1024, piece_metadata.length);
 		}
-
 		pieces--;
 		piece++;
+		log.info("checkFinished={}", buff);
 		checkFinished();
 		if (pieces > 0) {
             requestPiece(piece);
@@ -218,6 +223,7 @@ public class PeerWireClient {
 	}
 
 	private void checkFinished() throws Exception {
+		log.info("checkFinished pieces={}", pieces);
 		if (pieces <= 0) {
 			Map map = BencodingUtils.decode(metadata);
 
@@ -460,12 +466,15 @@ public class PeerWireClient {
 
 	private NextFunction onMessageLength = (byte[] buff) -> {
 		int length = ByteUtil.byteArrayToInt(buff);
-		if (length > 0)
-			setNext(length, onMessage);
+		log.info("message len={}",length);
+		if (length > 0) {
+            setNext(length, onMessage);
+        }
 	};
 
 	private NextFunction onHandshake = (byte[] buff) -> {
 		byte[] handshake = Arrays.copyOfRange(buff, protocolLen, buff.length);
+		log.info("handshake[5]={}",handshake[5]);
 		if (handshake[5] == 0x10) {
 			setNext(4, onMessageLength);
 			sendExtHandShake();
@@ -474,6 +483,7 @@ public class PeerWireClient {
 
 	private NextFunction onProtocolLen = (byte[] buff) -> {
 		protocolLen = (int) buff[0];
+		log.info("协议长度设置为48");
 		//接下来是协议名称(长度：protocolLen)和BT_RESERVED(长度：8)、info_hash(长度：20)、peer_id(长度：20)
 		setNext(protocolLen + 48, onHandshake);
 	};
