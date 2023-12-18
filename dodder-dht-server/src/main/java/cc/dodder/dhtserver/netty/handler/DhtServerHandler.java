@@ -5,11 +5,11 @@ import cc.dodder.common.util.CRC64;
 import cc.dodder.common.util.JSONUtil;
 import cc.dodder.common.util.NodeIdUtil;
 import cc.dodder.common.util.bencode.BencodingUtils;
-import cc.dodder.dhtserver.netty.DHTServer;
 import cc.dodder.dhtserver.netty.entity.Node;
 import cc.dodder.dhtserver.netty.entity.UniqueBlockingQueue;
 import cc.dodder.torrent.download.service.DownloadService;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -24,8 +24,7 @@ import javax.annotation.PreDestroy;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /***
  * 参见 Bittorrent 协议：
@@ -36,31 +35,39 @@ import java.util.Map;
 @Slf4j
 @Component
 @ChannelHandler.Sharable
-public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
-
-
-
-	private DHTServer dhtServer;
+public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
+	@Autowired
 	private StringRedisTemplate redisTemplate;
-	//private StreamBridge streamBridge;
 
+	@Autowired
 	private DownloadService downloadService;
+
+	private ChannelFuture serverChannelFuture;
+
+	/**
+	 * 启动节点列表
+	 */
+	private final List<InetSocketAddress> BOOTSTRAP_NODES = new ArrayList<>(Arrays.asList(
+			new InetSocketAddress("router.bittorrent.com", 6881),
+			new InetSocketAddress("dht.transmissionbt.com", 6881),
+			new InetSocketAddress("router.utorrent.com", 6881),
+			new InetSocketAddress("dht.aelitis.com", 6881)));
+
+	private byte[] SELF_NODE_ID=NodeIdUtil.randSelfNodeId();
+
+	public void setServerChannelFuture(ChannelFuture serverChannelFuture) {
+		this.serverChannelFuture = serverChannelFuture;
+	}
 
 	private static ThreadLocal<HashMap<String, Object>> args = new ThreadLocal<>();
 	private static ThreadLocal<HashMap<String, Object>> msg = new ThreadLocal<>();
 
-	public static final UniqueBlockingQueue NODES_QUEUE = new UniqueBlockingQueue();
-
-	@Autowired
-	public DHTServerHandler(DHTServer dhtServer, StringRedisTemplate redisTemplate,DownloadService downloadService) {
-		this.dhtServer = dhtServer;
-		this.redisTemplate = redisTemplate;
-		this.downloadService = downloadService;
-	}
+	private   UniqueBlockingQueue nodeQueues = new UniqueBlockingQueue();
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		super.exceptionCaught(ctx, cause);
+		log.error("aaaaaaaaaaaaaa{0}",cause);
 		cause.printStackTrace();
 	}
 
@@ -137,9 +144,9 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	 * @param sender
 	 */
 	private void responsePing(byte[] t, byte[]nid, InetSocketAddress sender) {
-		args.get().put("id", NodeIdUtil.getNeighbor(DHTServer.SELF_NODE_ID, nid));
+		args.get().put("id", NodeIdUtil.getNeighbor(SELF_NODE_ID, nid));
 		DatagramPacket packet = createPacket(t, "r", args.get(), sender);
-		dhtServer.sendKRPC(packet);
+		sendKRPC(packet);
 		//log.info("response ping[{}]", sender);
 	}
 
@@ -151,10 +158,10 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	 * @param sender
 	 */
 	private void responseFindNode(byte[] t, byte[] nid, InetSocketAddress sender) {
-		args.get().put("id", NodeIdUtil.getNeighbor(DHTServer.SELF_NODE_ID, nid));
+		args.get().put("id", NodeIdUtil.getNeighbor(SELF_NODE_ID, nid));
 		args.get().put("nodes", new byte[]{});
 		DatagramPacket packet = createPacket(t, "r", args.get(), sender);
-		dhtServer.sendKRPC(packet);
+		sendKRPC(packet);
 		//log.info("response find_node[{}]", sender);
 	}
 
@@ -169,9 +176,9 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 		args.get().put("token", new byte[]{info_hash[0], info_hash[1]});
 		args.get().put("nodes", new byte[]{});
-		args.get().put("id", NodeIdUtil.getNeighbor(DHTServer.SELF_NODE_ID, info_hash));
+		args.get().put("id", NodeIdUtil.getNeighbor(SELF_NODE_ID, info_hash));
 		DatagramPacket packet = createPacket(t, "r", args.get(), sender);
-		dhtServer.sendKRPC(packet);
+		sendKRPC(packet);
 		//log.info("response get_peers[{}]", sender);
 	}
 
@@ -205,10 +212,10 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 			port = ((Long) a.get("port")).intValue();
 		}
 
-		byte[] nodeId = NodeIdUtil.getNeighbor(DHTServer.SELF_NODE_ID, id);
+		byte[] nodeId = NodeIdUtil.getNeighbor(SELF_NODE_ID, id);
 		args.get().put("id", nodeId);
 		DatagramPacket packet = createPacket(t, "r", args.get(), sender);
-		dhtServer.sendKRPC(packet);
+		sendKRPC(packet);
 		CRC64 crc = new CRC64();
 		crc.reset();
 		crc.update(info_hash);
@@ -279,7 +286,7 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 				InetSocketAddress address = new InetSocketAddress(ip, (0x0000FF00 & (nodes[i + 24] << 8)) | (0x000000FF & nodes[i + 25]));
 				byte[] nid = new byte[20];
 				System.arraycopy(nodes, i, nid, 0, 20);
-				NODES_QUEUE.offer(new Node(nid, address));
+				nodeQueues.offer(new Node(nid, address));
 				//log.info("get node address=[{}] ", address);
 
 		}
@@ -289,8 +296,8 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	 * 加入 DHT 网络
 	 */
 	public void joinDHT() {
-		for (InetSocketAddress addr : DHTServer.BOOTSTRAP_NODES) {
-			findNode(addr, null, DHTServer.SELF_NODE_ID);
+		for (InetSocketAddress addr : BOOTSTRAP_NODES) {
+			findNode(addr, null, SELF_NODE_ID);
 		}
 	}
 
@@ -306,18 +313,18 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 		map.clear();
 		map.put("target", target);
 		if (nid != null) {
-            map.put("id", NodeIdUtil.getNeighbor(DHTServer.SELF_NODE_ID, target));
+            map.put("id", NodeIdUtil.getNeighbor(SELF_NODE_ID, target));
         }
 		DatagramPacket packet = createPacket("find_node".getBytes(), "q", map, address);
-		dhtServer.sendKRPC(packet);
+		sendKRPC(packet);
 	}
 
 	private void requestGetPeers(InetSocketAddress address, byte[] nid, byte[] info_hash) {
 		map.clear();
-		map.put("id", NodeIdUtil.getNeighbor(DHTServer.SELF_NODE_ID, nid));
+		map.put("id", NodeIdUtil.getNeighbor(SELF_NODE_ID, nid));
 		map.put("info_hash", info_hash);
 		DatagramPacket packet = createPacket("get_peers".getBytes(), "q", map, address);
-		dhtServer.sendKRPC(packet);
+		sendKRPC(packet);
 	}
 
 	/**
@@ -337,7 +344,7 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 		msg.get().put("t", t);
 		msg.get().put("y", y);
 		if (!arg.containsKey("id")) {
-            arg.put("id", DHTServer.SELF_NODE_ID);
+            arg.put("id",SELF_NODE_ID);
         }
 
 		if (y.equals("q")) {
@@ -363,7 +370,7 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 			try {
 				while (!isInterrupted()) {
 					try {
-						Node node = NODES_QUEUE.poll();
+						Node node = nodeQueues.poll();
 						if (node != null) {
 							findNode(node.getAddr(), node.getNodeId(), NodeIdUtil.createRandomNodeId());
 							requestGetPeers(node.getAddr(), node.getNodeId(), NodeIdUtil.createRandomNodeId());
@@ -387,4 +394,17 @@ public class DHTServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 		findNodeTask.interrupt();
 	}
 
+
+	public UniqueBlockingQueue getNodeQueues() {
+		return nodeQueues;
+	}
+
+	/**
+	 * 发送 KRPC 协议数据报文
+	 *
+	 * @param packet
+	 */
+	public void sendKRPC(DatagramPacket packet) {
+		serverChannelFuture.channel().writeAndFlush(packet);
+	}
 }

@@ -6,11 +6,8 @@ import cc.dodder.common.entity.Tree;
 import cc.dodder.common.util.*;
 import cc.dodder.common.util.bencode.BencodingUtils;
 import cc.dodder.common.util.snowflake.IdUtils;
-import cc.dodder.torrent.download.TorrentDownloadServiceApplication;
 import cc.dodder.torrent.download.util.SpringContextUtil;
 import ch.qos.logback.core.encoder.ByteArrayUtil;
-import ch.qos.logback.core.rolling.helper.FileStoreUtil;
-import ch.qos.logback.core.util.FileUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -333,11 +330,11 @@ public class PeerWireClient {
 		} else {
 			torrent.setFileName(fn);
 		}
-		if (TorrentDownloadServiceApplication.filterSensitiveWords) {
+		/*if (TorrentDownloadServiceApplication.filterSensitiveWords) {
 			if (SensitiveWordsUtil.getInstance().containsAny(fn)) {
 				torrent.setIsXxx(1);    //标记敏感资源
 			}
-		}
+		}*/
 
 		//多文件
 		if (info.containsKey("files")) {

@@ -1,7 +1,6 @@
 package cc.dodder.dhtserver.netty.schedule;
 
-import cc.dodder.dhtserver.netty.DHTServer;
-import cc.dodder.dhtserver.netty.handler.DHTServerHandler;
+import cc.dodder.dhtserver.netty.handler.DhtServerHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,16 +17,13 @@ import org.springframework.stereotype.Component;
 public class AutoJoinDHT {
 
 	@Autowired
-	private DHTServer dhtServer;
-	@Autowired
-	private DHTServerHandler handler;
+	private DhtServerHandler dhtServerHandler;
 
-	@Scheduled(fixedDelay = 60 * 1000, initialDelay = 10 * 1000)
+	@Scheduled(fixedDelay = 30 * 1000, initialDelay = 3 * 1000)
 	public void doJob() {
-		if (handler.NODES_QUEUE.isEmpty()) {
+		if (dhtServerHandler.getNodeQueues().isEmpty()) {
 			log.info("本地 DHT 节点数为0，自动重新加入 DHT 网络中...");
-			handler.joinDHT();
+			dhtServerHandler.joinDHT();
 		}
-		//dhtServer.saveBloomFilter();
 	}
 }

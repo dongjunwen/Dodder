@@ -1,12 +1,15 @@
 package cc.dodder.dhtserver.netty.config;
 
+import cc.dodder.dhtserver.netty.handler.DhtServerHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +30,7 @@ import java.util.Set;
  * @author: Mr.Xu
  * @create: 2019-02-15 14:50
  **/
+@Slf4j
 @Configuration
 @ConfigurationProperties(prefix = "netty")
 public class NettyConfig implements ApplicationListener<ContextClosedEvent> {
@@ -40,25 +44,34 @@ public class NettyConfig implements ApplicationListener<ContextClosedEvent> {
 
 	private EventLoopGroup group;
 
+	private ChannelFuture serverChannelFuture;
+
 
 	@Autowired
-	@Qualifier("channelInitializer")
-	private ChannelInitializer channelInitializer;
+	@Qualifier("dhtChannelInitializer")
+	private DhtChannelInitializer dhtChannelInitializer;
+
+	@Autowired
+	private DhtServerHandler dhtServerHandler;
 
 	@Bean(name = "serverBootstrap")
-	public Bootstrap bootstrap() {
+	public Bootstrap bootstrap() throws InterruptedException {
 		group = group();
-		Bootstrap b = new Bootstrap();
-		b.group(group)
+		Bootstrap bootstrap = new Bootstrap();
+		bootstrap.group(group)
 				.channel(NioDatagramChannel.class)
-				.handler(channelInitializer);
+				.handler(dhtChannelInitializer);
 		Map<ChannelOption<?>, Object> udpChannelOptions = udpChannelOptions();
 		Set<ChannelOption<?>> keySet = udpChannelOptions.keySet();
 		for (@SuppressWarnings("rawtypes")
 				ChannelOption option : keySet) {
-			b.option(option, udpChannelOptions.get(option));
+			bootstrap.option(option, udpChannelOptions.get(option));
 		}
-		return b;
+		log.info("Starting dht server at " + udpPort());
+		serverChannelFuture = bootstrap.bind(udpPort()).sync();
+		serverChannelFuture.channel().closeFuture();
+		dhtServerHandler.setServerChannelFuture(serverChannelFuture);
+		return bootstrap;
 	}
 
 	@Bean(name = "group")
@@ -70,6 +83,7 @@ public class NettyConfig implements ApplicationListener<ContextClosedEvent> {
 	public InetSocketAddress udpPort() {
 		return new InetSocketAddress(udpPort);
 	}
+
 
 	@Bean(name = "udpChannelOptions")
 	public Map<ChannelOption<?>, Object> udpChannelOptions() {

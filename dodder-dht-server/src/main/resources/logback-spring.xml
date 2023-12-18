@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true" scanPeriod="60 seconds" debug="false">
-   <!-- <springProperty scope="context" name="graylogHost" source="logback.graylog.host" />
-    <springProperty scope="context" name="graylogPort" source="logback.graylog.port" />
-    <springProperty scope="context" name="originHost" source="logback.graylog.originHost" />-->
-    <springProperty scope="context" name="appName" source="logback.graylog.appName" />
 
     <property name="appName" value="dhtServer"/>
     <property name="log.path" value="logs"/>
@@ -90,7 +86,6 @@
     </root>
 
     <root level="info">
-        <appender-ref ref="GELF" />
         <appender-ref ref="file_info"/>
         <appender-ref ref="file_error"/>
         <!--        <appender-ref ref="logstash" />-->
