@@ -309,22 +309,26 @@ public class PeerWireClient {
 
 		String encoding = "UTF-8";
 		Map<String, Object> info;
-		if (map.containsKey("info"))
-			info = (Map<String, Object>) map.get("info");
-		else
-			info = map;
+		if (map.containsKey("info")) {
+            info = (Map<String, Object>) map.get("info");
+        } else {
+            info = map;
+        }
 
-		if (!info.containsKey("name"))
-			return null;
-		if (map.containsKey("encoding"))
-			encoding = (String) map.get("encoding");
+		if (!info.containsKey("name")) {
+            return null;
+        }
+		if (map.containsKey("encoding")) {
+            encoding = (String) map.get("encoding");
+        }
 
 		Torrent torrent = new Torrent();
 
-		if (map.containsKey("creation date"))
-			torrent.setCreateDate(((Long) map.get("creation date")).longValue());
-		else
-			torrent.setCreateDate(System.currentTimeMillis());
+		if (map.containsKey("creation date")) {
+            torrent.setCreateDate(((Long) map.get("creation date")).longValue());
+        } else {
+            torrent.setCreateDate(System.currentTimeMillis());
+        }
 		byte[] temp;
 		if (info.containsKey("name.utf-8")) {
 			temp = (byte[]) info.get("name.utf-8");
@@ -361,8 +365,8 @@ public class PeerWireClient {
 			for (Map<String, Object> f : list) {
 				long length = ((Long) f.get("length")).longValue();
 				total += length;
-
-				Long filesize = null;     //null 表示为文件夹
+				//null 表示为文件夹
+				Long filesize = null;
 				boolean uft8 = f.containsKey("path.utf-8");
 				List<byte[]> aList = uft8 ? (List<byte[]>) f.get("path.utf-8") : (List<byte[]>) f.get("path");
 				int j = 0;
@@ -386,7 +390,8 @@ public class PeerWireClient {
 					} else {
 						parent = nodes.get(nodes.indexOf(node)).getNid();
 					}
-					if (cur++ > 1000) {		//文件过多，直接丢掉，目前发现最多的高达将近3万的文件，直接造成web端Dubbo序列化后无法释放，最终内存泄露
+					//文件过多，直接丢掉，目前发现最多的高达将近3万的文件，直接造成web端Dubbo序列化后无法释放，最终内存泄露
+					if (cur++ > 1000) {
 						info.clear();
 						return null;
 					}
@@ -403,8 +408,9 @@ public class PeerWireClient {
 			torrent.setFiles(JSONUtil.toJSONString(tree));
 			nodes.clear();
 			tree = null;
-			if (types.size() <= 0)
-				types.add("其他");
+			if (types.size() <= 0) {
+                types.add("其他");
+            }
 			String sType = String.join(",", types);
 			if (sType != null && !"".equals(sType)) {
 				torrent.setFileType(sType);
