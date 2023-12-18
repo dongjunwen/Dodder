@@ -10,6 +10,7 @@ import cc.dodder.torrent.download.util.SpringContextUtil;
 import ch.qos.logback.core.encoder.ByteArrayUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.io.InputStream;
@@ -26,7 +27,9 @@ import java.util.function.Consumer;
  * @author: Mr.Xu
  * @create: 2019-02-19 09:21
  **/
+@Slf4j
 public class PeerWireClient {
+
 
 	private Map<String, Object> map = new HashMap<>();
 
@@ -140,10 +143,11 @@ public class PeerWireClient {
 	};
 
 	private void resolveExtendMessage(byte b, byte[] buf) throws Exception {
-		if (b == 0)
-			resolveExtendHandShake(BencodingUtils.decode(buf));
-		else
-			resolvePiece(buf);
+		if (b == 0) {
+            resolveExtendHandShake(BencodingUtils.decode(buf));
+        } else {
+            resolvePiece(buf);
+        }
 	}
 
 	/**
@@ -180,7 +184,9 @@ public class PeerWireClient {
 				break;
 			}
 		}
-		if (++pos > buff.length - 1) return;
+		if (++pos > buff.length - 1) {
+            return;
+        }
 		byte[] piece_metadata = Arrays.copyOfRange(buff, pos, buff.length);
 		if (piece == 0 && piece_metadata[0] != 'd') {	// drop confused packet
 			destroy();
@@ -206,8 +212,9 @@ public class PeerWireClient {
 		pieces--;
 		piece++;
 		checkFinished();
-		if (pieces > 0)
-			requestPiece(piece);
+		if (pieces > 0) {
+            requestPiece(piece);
+        }
 	}
 
 	private void checkFinished() throws Exception {
@@ -230,6 +237,7 @@ public class PeerWireClient {
 
 						//写入本地文件
 						String fileName=IdUtils.genFileNo()+".torrent";
+						log.info("种子信息{}开始写入文件{}",torrent,fileName);
 						FileUtils.saveFile(JSONUtil.toJSONString(torrent),"/data/s8/torrent/"+fileName);
 						redisTemplate.opsForValue().set(crc64, "");
 					}
