@@ -24,6 +24,8 @@ public class AutoJoinDHT {
 		if (dhtServerHandler.getNodeQueues().isEmpty()) {
 			log.info("本地 DHT 节点数为0，自动重新加入 DHT 网络中...");
 			dhtServerHandler.joinDHT();
-		}
+		}/*else {
+			log.info("node queue:{}",dhtServerHandler.getNodeQueues());
+		}*/
 	}
 }

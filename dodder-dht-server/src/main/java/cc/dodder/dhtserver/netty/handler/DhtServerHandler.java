@@ -2,6 +2,7 @@ package cc.dodder.dhtserver.netty.handler;
 
 import cc.dodder.common.entity.DownloadMsgInfo;
 import cc.dodder.common.util.CRC64;
+import cc.dodder.common.util.FileUtils;
 import cc.dodder.common.util.JSONUtil;
 import cc.dodder.common.util.NodeIdUtil;
 import cc.dodder.common.util.bencode.BencodingUtils;
@@ -19,15 +20,15 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.RecordId;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ResourceUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -52,11 +53,40 @@ public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	/**
 	 * 启动节点列表
 	 */
-	private final List<InetSocketAddress> BOOTSTRAP_NODES = new ArrayList<>(Arrays.asList(
+	private final List<InetSocketAddress> BOOTSTRAP_NODES = new ArrayList<>();
+
+
+/*	private final List<InetSocketAddress> BOOTSTRAP_NODES = new ArrayList<>(Arrays.asList(
 			new InetSocketAddress("router.bittorrent.com", 6881),
 			new InetSocketAddress("dht.transmissionbt.com", 6881),
 			new InetSocketAddress("router.utorrent.com", 6881),
-			new InetSocketAddress("dht.aelitis.com", 6881)));
+			new InetSocketAddress("dht.aelitis.com", 6881)));*/
+
+	/**
+	 * dht节点初始化
+	 *
+	 * https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_all_udp.txt
+	 */
+	@PostConstruct
+	public void initBootsStrapNodes() throws FileNotFoundException {
+		File file = ResourceUtils.getFile("classpath:trackers_all_udp.txt");
+		List<String> trackerLists=FileUtils.readFileContent(file);
+		for(String trackerServer:trackerLists){
+			trackerServer=trackerServer.replace("udp://","").replace("/announce","");
+			String host=trackerServer.split(":")[0];
+			String port=trackerServer.split(":")[1];
+			InetSocketAddress inetSocketAddress=new InetSocketAddress(host,Integer.valueOf(port));
+			log.info("init {}",inetSocketAddress);
+			BOOTSTRAP_NODES.add(new InetSocketAddress(host,Integer.valueOf(port)));
+		}
+		List<InetSocketAddress> boostsLists=Arrays.asList(
+				new InetSocketAddress("router.bittorrent.com", 6881),
+				new InetSocketAddress("dht.transmissionbt.com", 6881),
+				new InetSocketAddress("router.utorrent.com", 6881),
+				new InetSocketAddress("dht.aelitis.com", 6881));
+		BOOTSTRAP_NODES.addAll(boostsLists);
+
+	}
 
 	private byte[] SELF_NODE_ID=NodeIdUtil.randSelfNodeId();
 

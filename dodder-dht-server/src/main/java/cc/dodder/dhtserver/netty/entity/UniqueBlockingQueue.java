@@ -36,4 +36,12 @@ public class UniqueBlockingQueue {
 			ips.remove(node.getAddr().getHostString());
 		return node;
 	}
+
+	@Override
+	public String toString() {
+		return "UniqueBlockingQueue{" +
+				"ips=" + ips +
+				", nodes=" + nodes +
+				'}';
+	}
 }

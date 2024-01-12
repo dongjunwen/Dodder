@@ -12,7 +12,8 @@ spring:
   redis:
     host: 127.0.0.1
     port: 6379
-    password: '!@#123QweAsdZxc0.123456RTyFGh'
+    #password: '!@#123QweAsdZxc0.123456RTyFGh'
+    password: 123456
     jedis:
       pool:
         max-idle: 8
