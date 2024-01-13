@@ -1,0 +1,10 @@
+version: '3'
+services:
+  java_app:
+    build:
+      context: .          # 使用当前目录下的 Dockerfile
+    volumes:
+      - ./:/app    # 持久卷映射
+      - /opt/torrent:/opt/torrent
+    ports:
+      - "8100:8100"

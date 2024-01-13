@@ -1,5 +1,5 @@
 server:
-  port: 8766
+  port: 8100
 ## netty服务器端口
 netty:
   udp:
@@ -10,10 +10,10 @@ netty:
 
 spring:
   redis:
-    host: 127.0.0.1
-    port: 6379
-    #password: '!@#123QweAsdZxc0.123456RTyFGh'
-    password: 123456
+    host: 149.56.240.89
+    port: 16379
+    password: '!@#123QweAsdZxc0.123456RTyFGh'
+    #password: 123456
     jedis:
       pool:
         max-idle: 8

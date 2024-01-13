@@ -251,7 +251,7 @@ public class PeerWireClient {
 						//写入本地文件
 						String fileName=IdUtils.genFileNo()+".torrent";
 						log.info("downloadMetadata 种子信息{}开始写入文件{}",torrent,fileName);
-						FileUtils.saveFile(JSONUtil.toJSONString(torrent),"/data/s8/torrent/"+fileName);
+						FileUtils.saveFile(JSONUtil.toJSONString(torrent),"/opt/torrent/"+fileName);
 						redisTemplate.opsForValue().set(crc64, "");
 					}
 					torrent = null;

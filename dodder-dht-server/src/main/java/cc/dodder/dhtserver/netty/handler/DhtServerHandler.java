@@ -29,6 +29,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -69,8 +70,8 @@ public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 	 */
 	@PostConstruct
 	public void initBootsStrapNodes() throws FileNotFoundException {
-		File file = ResourceUtils.getFile("classpath:trackers_all_udp.txt");
-		List<String> trackerLists=FileUtils.readFileContent(file);
+		InputStream inputStream = this.getClass().getResourceAsStream("classpath:trackers_all_udp.txt");
+		List<String> trackerLists=FileUtils.readFileContent(inputStream);
 		for(String trackerServer:trackerLists){
 			trackerServer=trackerServer.replace("udp://","").replace("/announce","");
 			String host=trackerServer.split(":")[0];

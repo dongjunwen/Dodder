@@ -53,27 +53,22 @@ public class FileUtils {
 
     /**
      * 读取文件内容
-     * @param file
+     * @param inputStream
      * @return
      */
-    public static List<String> readFileContent(File file) {
+    public static List<String> readFileContent(InputStream inputStream) {
         List<String> retList=new ArrayList<>();
-        if(!file.exists()){
-            return null;
-        }
-        String fileName=file.getName();
-
         try{
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
             String bufferText=null;
             int lineNum=1;
             while ((bufferText=bufferedReader.readLine())!=null){
-                logger.info("文件:{}第{}行,读取内容:{}",fileName,lineNum,bufferText);
+                logger.info("文件:{}第{}行,读取内容:{}",lineNum,bufferText);
                 retList.add(bufferText);
                 lineNum++;
             }
         }catch (Exception e){
-            logger.info("读取文件:{0},发生异常:{}",fileName,e);
+            logger.info("读取文件:{0},发生异常:{}",e);
         }
         return retList;
     }
