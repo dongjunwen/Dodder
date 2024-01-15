@@ -24,14 +24,16 @@ import java.util.concurrent.TimeUnit;
  * @since 2023/12/18 16:22
  */
 @Slf4j
-@Component
-public class DownloadConsumer implements ApplicationRunner {
+//@Component
+//public class DownloadConsumer implements ApplicationRunner {
+public class DownloadConsumer{
 
 
     @Autowired
     private DownloadService downloadService;
 
-    @Override
+   // @Override
+    @Deprecated
     public void run(ApplicationArguments args) throws Exception {
         StringRedisTemplate redisTemplate = (StringRedisTemplate)SpringContextUtil.getBean(StringRedisTemplate.class);
         long countNum=1;

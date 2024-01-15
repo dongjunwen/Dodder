@@ -1,15 +1,15 @@
 package cc.dodder.dhtserver.netty.handler;
 
 import cc.dodder.common.entity.DownloadMsgInfo;
+import cc.dodder.common.util.ByteUtil;
 import cc.dodder.common.util.CRC64;
-import cc.dodder.common.util.FileUtils;
 import cc.dodder.common.util.JSONUtil;
 import cc.dodder.common.util.NodeIdUtil;
 import cc.dodder.common.util.bencode.BencodingUtils;
 import cc.dodder.dhtserver.netty.entity.Node;
 import cc.dodder.dhtserver.netty.entity.UniqueBlockingQueue;
 import cc.dodder.torrent.download.service.DownloadService;
-import cc.dodder.torrent.download.util.RedisStreamUtil;
+import cc.dodder.torrent.download.util.RedisUtils;
 import cc.dodder.torrent.download.util.SpringContextUtil;
 import com.alibaba.fastjson2.JSON;
 import io.netty.buffer.Unpooled;
@@ -20,16 +20,11 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ResourceUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -51,43 +46,13 @@ public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 
 	private ChannelFuture serverChannelFuture;
 
-	/**
-	 * 启动节点列表
-	 */
-	private final List<InetSocketAddress> BOOTSTRAP_NODES = new ArrayList<>();
 
 
-/*	private final List<InetSocketAddress> BOOTSTRAP_NODES = new ArrayList<>(Arrays.asList(
+	private final List<InetSocketAddress> BOOTSTRAP_NODES = new ArrayList<>(Arrays.asList(
 			new InetSocketAddress("router.bittorrent.com", 6881),
 			new InetSocketAddress("dht.transmissionbt.com", 6881),
 			new InetSocketAddress("router.utorrent.com", 6881),
-			new InetSocketAddress("dht.aelitis.com", 6881)));*/
-
-	/**
-	 * dht节点初始化
-	 *
-	 * https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_all_udp.txt
-	 */
-	@PostConstruct
-	public void initBootsStrapNodes() throws FileNotFoundException {
-		InputStream inputStream = this.getClass().getResourceAsStream("classpath:trackers_all_udp.txt");
-		List<String> trackerLists=FileUtils.readFileContent(inputStream);
-		for(String trackerServer:trackerLists){
-			trackerServer=trackerServer.replace("udp://","").replace("/announce","");
-			String host=trackerServer.split(":")[0];
-			String port=trackerServer.split(":")[1];
-			InetSocketAddress inetSocketAddress=new InetSocketAddress(host,Integer.valueOf(port));
-			log.info("init {}",inetSocketAddress);
-			BOOTSTRAP_NODES.add(new InetSocketAddress(host,Integer.valueOf(port)));
-		}
-		List<InetSocketAddress> boostsLists=Arrays.asList(
-				new InetSocketAddress("router.bittorrent.com", 6881),
-				new InetSocketAddress("dht.transmissionbt.com", 6881),
-				new InetSocketAddress("router.utorrent.com", 6881),
-				new InetSocketAddress("dht.aelitis.com", 6881));
-		BOOTSTRAP_NODES.addAll(boostsLists);
-
-	}
+			new InetSocketAddress("dht.aelitis.com", 6881)));
 
 	private byte[] SELF_NODE_ID=NodeIdUtil.randSelfNodeId();
 
@@ -153,7 +118,7 @@ public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 		String q = new String((byte[]) map.get("q"));
 		//query params
 		Map<String, ?> a = (Map<String, ?>) map.get("a");
-		//log.info("on query, query name is {}", q);
+		log.info("on query, query name is {}", q);
 		switch (q) {
 			case "ping"://ping Query = {"t":"aa", "y":"q", "q":"ping", "a":{"id":"发送者ID"}}
 				responsePing(t, (byte[]) a.get("id"), sender);
@@ -183,7 +148,7 @@ public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 		args.get().put("id", NodeIdUtil.getNeighbor(SELF_NODE_ID, nid));
 		DatagramPacket packet = createPacket(t, "r", args.get(), sender);
 		sendKRPC(packet);
-		//log.info("response ping[{}]", sender);
+		log.info("response ping[{}]", sender);
 	}
 
 	/**
@@ -198,7 +163,7 @@ public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 		args.get().put("nodes", new byte[]{});
 		DatagramPacket packet = createPacket(t, "r", args.get(), sender);
 		sendKRPC(packet);
-		//log.info("response find_node[{}]", sender);
+		log.info("response find_node[{}]", sender);
 	}
 
 	/**
@@ -215,7 +180,7 @@ public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 		args.get().put("id", NodeIdUtil.getNeighbor(SELF_NODE_ID, info_hash));
 		DatagramPacket packet = createPacket(t, "r", args.get(), sender);
 		sendKRPC(packet);
-		//log.info("response get_peers[{}]", sender);
+		log.info("response get_peers[{}]", sender);
 	}
 
 	/**
@@ -262,20 +227,24 @@ public class DhtServerHandler extends SimpleChannelInboundHandler<DatagramPacket
 			return;
 		}
 
-		//log.error("info_hash[AnnouncePeer] : {}:{} - {}", sender.getHostString(), port, ByteUtil.byteArrayToHex(info_hash));
+		log.error("info_hash[AnnouncePeer] : {}:{} - {}", sender.getHostString(), port, ByteUtil.byteArrayToHex(info_hash));
 		//send to kafka
 		//streamBridge.send("download-out", JSONUtil.toJSONString(new DownloadMsgInfo(sender.getHostString(), port, info_hash, crc64)).getBytes());
 		//直接放入线程池下载 效率较低
 		//downloadService.downloadTorrent(new DownloadMsgInfo(sender.getHostString(), port, info_hash, crc64));
 		//放入redis 队列 慢慢消化
 
-		RedisStreamUtil streamUtil = new RedisStreamUtil(redisTemplate);
-		Map<Object, Object> map=new HashMap<>();
+		//RedisStreamUtil streamUtil = new RedisStreamUtil(redisTemplate);
+		//Map<Object, Object> map=new HashMap<>();
+		//map.put(info_hash, JSON.toJSONString(downloadMsgInfo));
+	//	streamUtil.addGroup("downloadStream","downloadGroup", ReadOffset.latest());
+		//RecordId recordId = streamUtil.addMessage("downloadStream", map);
+		//log.info("放入redis 队列recordId:{}",recordId);
+
 		DownloadMsgInfo downloadMsgInfo=new DownloadMsgInfo(sender.getHostString(), port, info_hash, crc64);
-		map.put(info_hash, JSON.toJSONString(downloadMsgInfo));
-		//streamUtil.addGroup("downloadStream","downloadGroup", ReadOffset.latest());
-		RecordId recordId = streamUtil.addMessage("downloadStream", map);
-		log.info("放入redis 队列recordId:{}",recordId);
+		RedisUtils redisUtils=new RedisUtils(redisTemplate);
+		redisUtils.publishMessage(JSON.toJSONString(downloadMsgInfo));
+		log.info("放入redis队列infoHash:{}",info_hash);
 	}
 
 	/**

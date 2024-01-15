@@ -13,6 +13,8 @@ spring:
     host: 149.56.240.89
     port: 16379
     password: '!@#123QweAsdZxc0.123456RTyFGh'
+    #host: 127.0.0.1
+    #port: 6379
     #password: 123456
     jedis:
       pool:
